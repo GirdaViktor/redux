@@ -1,17 +1,25 @@
-import {useEffect, useReducer} from 'react';
+import {useEffect, useReducer, useRef} from 'react';
 import type {CounterId, DecrementAction, IncrementAction} from "./store.ts";
-import { store } from "./store.ts";
+import {counterSelector, store} from "./store.ts";
 
 export const Counter = ({counterId}: {counterId: CounterId}) => {
   const [, forceUpdate] = useReducer((x) => x + 1, 0);
+  const counterState = counterSelector(store.getState(), counterId);
+  const lastStateRef = useRef<ReturnType<typeof counterSelector>>(null)
 
   useEffect(() => {
     const unSubscribe = store.subscribe(() => {
-      forceUpdate();
+      const lastState = lastStateRef.current;
+
+      if (counterState !== lastState) forceUpdate();
+
+      lastStateRef.current = counterState
     });
 
     return unSubscribe;
   }, []);
+
+
   return (
     <div>
       <div
@@ -20,7 +28,7 @@ export const Counter = ({counterId}: {counterId: CounterId}) => {
         }}
       >dec</div>
 
-      <div>{store.getState().counters[counterId]?.counter || 0}</div>
+      <div>{counterState?.counter || 0}</div>
 
       <div
         onClick={() => {
